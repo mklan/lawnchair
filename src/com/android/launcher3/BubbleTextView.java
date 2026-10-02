@@ -94,6 +94,7 @@ import com.android.launcher3.model.data.AppInfo;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.data.ItemInfoWithIcon;
 import com.android.launcher3.model.data.WorkspaceItemInfo;
+import com.android.launcher3.LauncherSettings;
 import com.android.launcher3.popup.PopupContainerWithArrow;
 import com.android.launcher3.search.StringMatcherUtility;
 import com.android.launcher3.util.CancellableTask;
@@ -195,6 +196,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     private boolean mLayoutHorizontal;
     private final boolean mIsRtl;
     private final int mIconSize;
+    private int mHotseatIconSizeOverride = 0;
 
     @ViewDebug.ExportedProperty(category = "launcher")
     private boolean mHideBadge = false;
@@ -418,6 +420,13 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
 
     @UiThread
     public void applyFromWorkspaceItem(WorkspaceItemInfo info) {
+        // Keep hotseat icon size in sync with the current DeviceProfile on every bind/rebind.
+        if (info.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT
+                || info.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT_PREDICTION) {
+            setHotseatIconSize(mActivity.getDeviceProfile().hotseatIconSizePx);
+        } else {
+            mHotseatIconSizeOverride = 0;
+        }
         applyIconAndLabel(info);
         setItemInfo(info);
 
@@ -1032,7 +1041,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
      * Get the icon bounds on the view depending on the layout type.
      */
     public void getIconBounds(Rect outBounds) {
-        getIconBounds(mIconSize, outBounds);
+        getIconBounds(getEffectiveIconSize(), outBounds);
     }
 
     /**
@@ -1076,7 +1085,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         int height = MeasureSpec.getSize(heightMeasureSpec);
         if (mCenterVertically) {
             Paint.FontMetrics fm = getPaint().getFontMetrics();
-            int cellHeightPx = mIconSize + getCompoundDrawablePadding() +
+            int cellHeightPx = getEffectiveIconSize() + getCompoundDrawablePadding() +
                     (int) Math.ceil(fm.bottom - fm.top) * getCellSpecMaxTextLineCount();
             setPadding(getPaddingLeft(), (height - cellHeightPx) / 2, getPaddingRight(),
                     getPaddingBottom());
@@ -1488,7 +1497,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         if (icon instanceof FastBitmapDrawable fbd) {
             fbd.resetScale();
         }
-        icon.setBounds(0, 0, mIconSize, mIconSize);
+        icon.setBounds(0, 0, getEffectiveIconSize(), getEffectiveIconSize());
 
         updateIcon(icon);
 
@@ -1551,7 +1560,16 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     }
 
     public int getIconSize() {
-        return mIconSize;
+        return getEffectiveIconSize();
+    }
+
+    /** Sets a dedicated icon size for hotseat items (dock icon size preference). */
+    public void setHotseatIconSize(int iconSizePx) {
+        mHotseatIconSizeOverride = iconSizePx;
+    }
+
+    private int getEffectiveIconSize() {
+        return mHotseatIconSizeOverride > 0 ? mHotseatIconSizeOverride : mIconSize;
     }
 
     public boolean isDisplaySearchResult() {
@@ -1588,11 +1606,11 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
 
     @Override
     public void getWorkspaceVisualDragBounds(Rect bounds) {
-        getIconBounds(mIconSize, bounds);
+        getIconBounds(getEffectiveIconSize(), bounds);
     }
 
     public void getSourceVisualDragBounds(Rect bounds) {
-        getIconBounds(mIconSize, bounds);
+        getIconBounds(getEffectiveIconSize(), bounds);
     }
 
     @Override

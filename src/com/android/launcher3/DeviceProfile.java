@@ -224,6 +224,7 @@ public class DeviceProfile {
     /** Number of horizontally scrollable dock pages (1 = classic single dock). */
     public int numHotseatPages;
     public int hotseatCellHeightPx;
+    public int hotseatIconSizePx;
     private int mHotseatColumnSpan;
     private int mHotseatWidthPx; // not used in vertical bar layout
     // In portrait: size = height, in landscape: size = width
@@ -601,10 +602,14 @@ public class DeviceProfile {
         mHotseatQsbSpaceBase = hotseatQsbSpace;
 
         if (mIsResponsiveGrid) {
-            updateHotseatSizes(mResponsiveWorkspaceCellSpec.getIconSize());
+            float hotseatFactor = inv.iconSize[mTypeIndex] > 0
+                    ? inv.hotseatIconSize[mTypeIndex] / inv.iconSize[mTypeIndex] : 1f;
+            hotseatIconSizePx = Math.max(1, Math.round(
+                    mResponsiveWorkspaceCellSpec.getIconSize() * hotseatFactor));
         } else {
-            updateHotseatSizes(pxFromDp(inv.iconSize[mTypeIndex], mMetrics));
+            hotseatIconSizePx = Math.max(1, pxFromDp(inv.hotseatIconSize[mTypeIndex], mMetrics));
         }
+        updateHotseatSizes(hotseatIconSizePx);
 
         mBubbleBarSpaceThresholdPx =
                 res.getDimensionPixelSize(R.dimen.bubblebar_hotseat_adjustment_threshold);
@@ -1387,7 +1392,7 @@ public class DeviceProfile {
             );
         }
 
-        updateHotseatSizes(iconSizePx);
+        updateHotseatSizes(hotseatIconSizePx);
 
         // Folder icon
         folderIconSizePx = Math.round(iconSizePx * ICON_VISIBLE_AREA_FACTOR);
@@ -1418,7 +1423,7 @@ public class DeviceProfile {
         int numBorders = (numShownHotseatIcons - 1 + numExtraBorder);
         if (numBorders <= 0) return 0;
 
-        float hotseatIconsTotalPx = iconSizePx * numShownHotseatIcons;
+        float hotseatIconsTotalPx = hotseatIconSizePx * numShownHotseatIcons;
         int hotseatBorderSpacePx = (int) (hotseatWidthPx - hotseatIconsTotalPx) / numBorders;
         return Math.min(hotseatBorderSpacePx, getHotseatProfile().getMaxIconSpacePx());
     }
@@ -2010,7 +2015,7 @@ public class DeviceProfile {
      */
     private int getHotseatRequiredWidth() {
         int additionalQsbSpace = getAdditionalQsbSpace();
-        return iconSizePx * numShownHotseatIcons
+        return hotseatIconSizePx * numShownHotseatIcons
                 + hotseatBorderSpace * (numShownHotseatIcons
                     - (getHotseatProfile().getAreNavButtonsInline() ? 0 : 1))
                 + additionalQsbSpace;
@@ -2041,7 +2046,7 @@ public class DeviceProfile {
      */
     private int getHotseatBarBottomPadding() {
         if (isQsbOnTop() || isQsbInline) { // LC-Note: isQsbOnTop
-            return hotseatBarBottomSpacePx - (Math.abs(hotseatCellHeightPx - iconSizePx) / 2);
+            return hotseatBarBottomSpacePx - (Math.abs(hotseatCellHeightPx - hotseatIconSizePx) / 2);
         } else {
             return hotseatBarSizePx - hotseatCellHeightPx * numHotseatRows;
         }
@@ -2057,7 +2062,7 @@ public class DeviceProfile {
                     - (isQsbInline ? 0 : getHotseatProfile().getQsbVisualHeight())
                     - hotseatQsbSpace
                     - (hotseatCellHeightPx / 2)
-                    + ((hotseatCellHeightPx - iconSizePx) / 2);
+                    + ((hotseatCellHeightPx - hotseatIconSizePx) / 2);
         } else {
             return hotseatBarSizePx - (getHotseatProfile().getQsbVisualHeight() / 2);
         }
@@ -2079,7 +2084,7 @@ public class DeviceProfile {
     public int getTaskbarOffsetY() {
         int taskbarIconBottomSpace = (getTaskbarProfile().getHeight() - iconSizePx) / 2;
         int launcherIconBottomSpace =
-                Math.min((hotseatCellHeightPx - iconSizePx) / 2, gridVisualizationPaddingY);
+                Math.min((hotseatCellHeightPx - hotseatIconSizePx) / 2, gridVisualizationPaddingY);
         return getHotseatBarBottomPadding() + launcherIconBottomSpace - taskbarIconBottomSpace;
     }
 

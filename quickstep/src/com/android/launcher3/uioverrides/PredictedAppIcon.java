@@ -91,7 +91,7 @@ public class PredictedAppIcon extends DoubleShadowBubbleTextView {
     private final DeviceProfile mDeviceProfile;
     private final Paint mIconRingPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path mRingPath = new Path();
-    private final int mNormalizedIconSize;
+    private int mNormalizedIconSize;
     private Path mShapePath;
     private final Matrix mTmpMatrix = new Matrix();
 
@@ -144,6 +144,16 @@ public class PredictedAppIcon extends DoubleShadowBubbleTextView {
         mShadowFilter = new BlurMaskFilter(shadowSize, BlurMaskFilter.Blur.OUTER);
         mShapePath = ThemeManager.INSTANCE.get(context).getIconShape().getPath(mNormalizedIconSize);
         compensateTextStyle();
+    }
+
+    @Override
+    public void setHotseatIconSize(int iconSizePx) {
+        super.setHotseatIconSize(iconSizePx);
+        mNormalizedIconSize = Math.round(getIconSize() * ICON_VISIBLE_AREA_FACTOR);
+        mSlotIconBound.set(0, 0, getIconSize(), getIconSize());
+        mSlotIconBound.offsetTo((getWidth() - getIconSize()) / 2,
+            (getHeight() - getIconSize()) / 2);
+        updateRingPath();
     }
 
     /** LC-Note: Compensate text size for predicted app container
@@ -322,7 +332,7 @@ public class PredictedAppIcon extends DoubleShadowBubbleTextView {
 
     private int getOutlineOffsetY() {
         if (mDisplay != DISPLAY_TASKBAR) {
-            return getPaddingTop() + mDeviceProfile.folderIconOffsetYPx;
+            return getPaddingTop() + (getIconSize() - mNormalizedIconSize) / 2 + 3;
         }
         return (getMeasuredHeight() - mNormalizedIconSize) / 2;
     }
@@ -422,7 +432,7 @@ public class PredictedAppIcon extends DoubleShadowBubbleTextView {
         canvas.drawPath(mRingPath, mIconRingPaint);
         mIconRingPaint.setColor(mPlateColor.currentColor);
         if (Flags.enableLauncherIconShapes()) {
-            mIconRingPaint.setStrokeWidth(getWidth() * RING_EFFECT_RATIO);
+            mIconRingPaint.setStrokeWidth(getIconSize() * RING_EFFECT_RATIO);
             // Using FILL_AND_STROKE as there is still some gap to fill,
             // between inner curve of ring / outer curve of icon.
             mIconRingPaint.setStyle(Paint.Style.FILL_AND_STROKE);

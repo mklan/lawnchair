@@ -115,6 +115,9 @@ class ItemInflater<T>(
             else R.layout.app_icon
         val favorite =
             LayoutInflater.from(parent.context).inflate(layout, parent, false) as BubbleTextView
+        if (container == Favorites.CONTAINER_HOTSEAT || container == Favorites.CONTAINER_HOTSEAT_PREDICTION) {
+            favorite.setHotseatIconSize(context.deviceProfile.hotseatIconSizePx)
+        }
         favorite.applyFromWorkspaceItem(info)
         favorite.setOnClickListener(clickListener)
         favorite.onFocusChangeListener = focusListener
